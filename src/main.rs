@@ -61,9 +61,9 @@ fn execute_fzf_command(ag_out: Vec<u8>) -> String {
     };
 }
 
-fn execute_vim_command(fzf_result: String) {
+fn execute_vim_command(selected_file_path: String) {
     let mut vim = Command::new("vim");
-    vim.arg(fzf_result);
+    vim.arg(selected_file_path);
     match vim.status() {
         Ok(status) => {
             if !status.success() {
@@ -79,6 +79,6 @@ fn execute_vim_command(fzf_result: String) {
 
 fn main() {
     let ag_out = execute_ag_command();
-    let fzf_result = execute_fzf_command(ag_out);
-    execute_vim_command(fzf_result);
+    let selected_file_path = execute_fzf_command(ag_out);
+    execute_vim_command(selected_file_path);
 }
