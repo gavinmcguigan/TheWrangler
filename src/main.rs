@@ -30,34 +30,47 @@ fn execute_fzf_command(ag_out: Vec<u8>) -> String {
 
     match fzf.spawn() {
         Ok(mut process) => {
-            match process.stdin.take().unwrap().write_all(&ag_out) {
-                Ok(_) => {
-                    // fzf process started successfully
-                    let output = match process.wait_with_output() {
-                        Ok(output) => output.stdout,
-                        Err(_e) => {
-                            eprintln!("Error waiting for fzf process.");
+            match process.stdin.take() {
+                Some(mut stdin) => {
+                    match stdin.write_all(&ag_out) {
+                        Ok(_) => {
+                            // fzf process started successfully
+                            let output = match process.wait_with_output() {
+                                Ok(output) => output.stdout,
+                                Err(_e) => {
+                                    eprintln!("Error waiting for fzf process.");
+                                    std::process::exit(1);
+                                }
+                            };
+                            let user_choice = String::from_utf8(output)
+                                .expect("Invalid UTF-8 sequence")
+                                .replace('\0', "")
+                                .replace('\n', "");
+                            if user_choice.is_empty() {
+                                eprintln!("No file selected. Exiting.");
+                                std::process::exit(1);
+                            }
+                            return user_choice
+                        }
+                        Err(e) => {
+                            eprintln!("Error writing to fzf stdin: {}", e);
                             std::process::exit(1);
                         }
-                    };
-                    let user_choice = String::from_utf8(output)
-                        .expect("Invalid UTF-8 sequence")
-                        .replace('\0', "")
-                        .replace('\n', "");
-                    if user_choice.is_empty() {
-                        eprintln!("No file selected. Exiting.");
-                        std::process::exit(1);
                     }
-                    return user_choice
+                    
                 }
-                Err(e) => {
-                    println!("Error writing to fzf stdin: {}", e);
-                    return String::new();
+                None => {
+                    eprintln!("Error getting fzf stdin.");
+                    std::process::exit(1);
                 }
             }
+
+
+
         }
         Err(_e) => {
-            return String::new(); // Error starting fzf process
+            eprintln!("Error starting fzf process.");
+            std::process::exit(1);
         }
     };
 }
