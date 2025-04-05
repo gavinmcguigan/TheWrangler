@@ -1,44 +1,75 @@
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-fn _only_ag() {
+fn execute_ag_command() -> Vec<u8> {
     // Create ag command
     let mut ag = Command::new("ag");
     ag.arg("-g").arg("$").arg("/home/gavin/github/");
 
     // Execute ag command and capture its output
-    let ag_out = ag.output().unwrap().stdout;
+    match ag.output() {
+        Ok(output) => {
+            if !output.status.success() {
+                eprintln!("Error executing ag command.");
+                std::process::exit(1);
+            }
+            return output.stdout;
+        }
+        Err(e) => {
+            eprintln!("Error executing ag command: {}", e);
+            std::process::exit(1);
+        }
+    }
+}
 
+fn execute_fzf_command(ag_out: Vec<u8>) -> String {
     // Create fzf command and set stdin and stdout to be piped
     let mut fzf = Command::new("fzf");
     fzf.stdin(Stdio::piped());
     fzf.stdout(Stdio::piped());
 
-    let mut fzf_process = fzf.spawn().unwrap();
-    fzf_process
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(&ag_out)
-        .unwrap();
+    match fzf.spawn() {
+        Ok(mut process) => {
+            match process.stdin.take().unwrap().write_all(&ag_out) {
+                Ok(_) => {
+                    // fzf process started successfully
+                    let output = match process.wait_with_output() {
+                        Ok(output) => output.stdout,
+                        Err(_e) => {
+                            eprintln!("Error waiting for fzf process.");
+                            std::process::exit(1);
+                        }
+                    };
+                    let user_choice = String::from_utf8(output)
+                        .expect("Invalid UTF-8 sequence")
+                        .replace('\0', "")
+                        .replace('\n', "");
+                    if user_choice.is_empty() {
+                        eprintln!("No file selected. Exiting.");
+                        std::process::exit(1);
+                    }
+                    return user_choice
+                }
+                Err(e) => {
+                    println!("Error writing to fzf stdin: {}", e);
+                    return String::new();
+                }
+            }
+        }
+        Err(_e) => {
+            return String::new(); // Error starting fzf process
+        }
+    };
+}
 
-    let fzf_process_output = fzf_process.wait_with_output().unwrap().stdout;
-    let selected_file = String::from_utf8(fzf_process_output)
-        .expect("Invalid UTF-8 sequence")
-        .replace('\0', "")
-        .replace('\n', "");
-    if selected_file.is_empty() {
-        return;
-    }
-
-    println!("Selected file: '{}'", selected_file);
-
+fn execute_vim_command(fzf_result: String) {
     let mut vim = Command::new("vim");
-    vim.arg(selected_file);
+    vim.arg(fzf_result);
     vim.status().expect("Failed to execute vim");
-    // let vim_process = vim.spawn().expect("Failed to start vim");
 }
 
 fn main() {
-    _only_ag();
+    let ag_out = execute_ag_command();
+    let fzf_result = execute_fzf_command(ag_out);
+    execute_vim_command(fzf_result);
 }
