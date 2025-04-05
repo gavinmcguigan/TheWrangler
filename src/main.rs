@@ -30,6 +30,7 @@ fn execute_ag_command() -> Vec<u8> {
 fn execute_fzf_command(ag_out: Vec<u8>) -> String {
     // Create fzf command and set stdin and stdout to be piped
     let mut fzf = Command::new("fzf");
+    fzf.arg("--preview").arg("sudo -E batcat --style=full --color=always {}").arg("--preview-window").arg("top:80%:wrap");
     fzf.stdin(Stdio::piped());
     fzf.stdout(Stdio::piped());
 
