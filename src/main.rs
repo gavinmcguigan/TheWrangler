@@ -1,13 +1,17 @@
 use std::io::Write;
 use std::process::{Command, Stdio};
+use dirs;
 
 fn execute_ag_command() -> Vec<u8> {
+    let home_dir = dirs::home_dir().expect("Failed to get home directory");
+    let home_dir_str = home_dir.to_str().expect("Failed to convert home directory to string");
     // Create ag command
     let mut ag = Command::new("sudo");
     ag.arg("ag")
-        .arg("--follow")
-        .arg("-g")
-        .arg("$")
+        .arg("--follow")    // follow symlinks
+        .arg("-g")  // filename pattern search
+        .arg("$")   // search for all files
+        .arg("--path-to-ignore=".to_owned() + home_dir_str  + "/.ignore")
         .arg("/omd/sites");
 
     // Execute ag command and capture its output
