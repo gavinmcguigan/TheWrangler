@@ -1,16 +1,10 @@
 use std::io::Write;
 use std::process::{Command, Stdio};
-use dirs;
-
-fn execute_ag_command() -> Vec<u8> {
-    // Resolve the home directory
-    let home_dir = dirs::home_dir().expect("Failed to get home directory");
-    let home_dir_str = home_dir.to_str().expect("Failed to convert home directory to string");
 
 fn execute_ag_command() -> Vec<u8> {
     // Create ag command
-    let mut ag = Command::new("ag");
-    ag.arg("-g").arg("$").arg(home_dir_str);
+    let mut ag = Command::new("sudo");
+    ag.arg("ag").arg("--follow").arg("-g").arg("$").arg("/omd/sites");
 
     // Execute ag command and capture its output
     match ag.output() {
