@@ -1,17 +1,27 @@
+use dirs;
 use std::io::Write;
 use std::process::{Command, Stdio};
-use dirs;
+
+fn home_dir() -> String {
+    let home_dir = dirs::home_dir().expect("Failed to get home directory");
+    home_dir
+        .to_str()
+        .expect("Failed to convert home directory to string")
+        .to_string()
+}
 
 fn execute_ag_command() -> Vec<u8> {
     let home_dir = dirs::home_dir().expect("Failed to get home directory");
-    let home_dir_str = home_dir.to_str().expect("Failed to convert home directory to string");
+    let home_dir_str = home_dir
+        .to_str()
+        .expect("Failed to convert home directory to string");
     // Create ag command
     let mut ag = Command::new("sudo");
     ag.arg("ag")
-        .arg("--follow")    // follow symlinks
-        .arg("-g")  // filename pattern search
-        .arg("$")   // search for all files
-        .arg("--path-to-ignore=".to_owned() + home_dir_str  + "/.ignore")
+        .arg("--follow") // follow symlinks
+        .arg("-g") // filename pattern search
+        .arg("$") // search for all files
+        .arg("--path-to-ignore=".to_owned() + home_dir_str + "/.ignore")
         .arg("/omd/sites");
 
     // Execute ag command and capture its output
@@ -33,13 +43,11 @@ fn apply_filters(ag_out: Vec<u8>) -> Vec<u8> {
     let mut files_found: Vec<String> = Vec::new();
     let ag_out_str = String::from_utf8(ag_out).expect("Invalid UTF-8 sequence");
     for line in ag_out_str.lines() {
-        
-        if !line.contains("/python3.") && !line.contains("/precompiled_checks/"){
+        if !line.contains("/python3.") && !line.contains("/precompiled_checks/") {
             files_found.push(line.to_string() + "\n");
-        } 
+        }
     }
     files_found.join("").into_bytes()
-
 }
 
 fn execute_fzf_command(mut ag_out: Vec<u8>) -> String {
@@ -90,8 +98,9 @@ fn execute_fzf_command(mut ag_out: Vec<u8>) -> String {
 }
 
 fn execute_vim_command(selected_file_path: String) {
-    let mut vim = Command::new("vim");
+    let mut vim = Command::new("sudoedit");
     vim.arg(selected_file_path);
+
     match vim.status() {
         Ok(status) => {
             if !status.success() {
