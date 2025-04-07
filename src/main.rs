@@ -31,7 +31,9 @@ fn execute_fzf_command(ag_out: Vec<u8>) -> String {
     fzf.arg("--preview")
         .arg("sudo -E batcat --style=full --color=always {}")
         .arg("--preview-window")
-        .arg("top:80%:wrap");
+        .arg("top:80%:wrap")
+        .arg("--bind")
+        .arg("ctrl-d:preview-page-down,ctrl-u:preview-page-up");
     fzf.stdin(Stdio::piped());
     fzf.stdout(Stdio::piped());
 
