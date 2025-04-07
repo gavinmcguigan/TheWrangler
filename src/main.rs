@@ -25,7 +25,21 @@ fn execute_ag_command() -> Vec<u8> {
     }
 }
 
-fn execute_fzf_command(ag_out: Vec<u8>) -> String {
+fn apply_filters(ag_out: Vec<u8>) -> Vec<u8> {
+    let mut files_found: Vec<String> = Vec::new();
+    let ag_out_str = String::from_utf8(ag_out).expect("Invalid UTF-8 sequence");
+    for line in ag_out_str.lines() {
+        
+        if !line.contains("/python3.") && !line.contains("/precompiled_checks/"){
+            files_found.push(line.to_string() + "\n");
+        } 
+    }
+    files_found.join("").into_bytes()
+
+}
+
+fn execute_fzf_command(mut ag_out: Vec<u8>) -> String {
+    ag_out = apply_filters(ag_out.clone());
     // Create fzf command and set stdin and stdout to be piped
     let mut fzf = Command::new("fzf");
     fzf.arg("--preview")
