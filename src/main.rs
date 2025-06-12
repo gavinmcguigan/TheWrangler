@@ -98,7 +98,8 @@ fn execute_fzf_command(mut ag_out: Vec<u8>) -> String {
 }
 
 fn execute_vim_command(selected_file_path: String) {
-    let mut vim = Command::new("sudoedit");
+    let mut vim = Command::new("sudo");
+    vim.arg("vim");
     vim.arg(selected_file_path);
 
     match vim.status() {
